@@ -1,0 +1,14 @@
+[Unit]
+Description=Rabbit OBS package build listener
+After=syslog.target network.target
+Wants=cobblerd.service
+
+[Service]
+RuntimeDirectory=rabbit_obs
+RuntimeDirectoryMode=755
+ExecStart=+/root/cobbler-tools/libvirt_test_environment/rabbit_obs_client.py
+
+
+[Install]
+WantedBy=multi-user.target
+
