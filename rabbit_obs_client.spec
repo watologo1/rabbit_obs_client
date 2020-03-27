@@ -26,7 +26,7 @@ Url:            https://github.com/rabbit_obs_client/rabbit_obs_client
 Source:         %{name}-%{version}.tar.xz
 BuildRequires:  pkgconfig(systemd)
 Requires:       python3-pika
-Arch:           noarch
+BuildArch:           noarch
 %{?systemd_requires}
 
 %description
