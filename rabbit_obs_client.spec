@@ -71,5 +71,6 @@ ln -sf service %{buildroot}%{_sbindir}/rcrabbit_obs_client
 %{_unitdir}/rabbit_obs_client.service
 %{_sbindir}/rcrabbit_obs_client
 %ghost /run/rabbit_obs_client
+%{_localstatedir}/log/rabbit_obs
 
 %changelog
