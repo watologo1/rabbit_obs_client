@@ -6,8 +6,7 @@ Wants=cobblerd.service
 [Service]
 RuntimeDirectory=rabbit_obs
 RuntimeDirectoryMode=755
-ExecStart=+/root/cobbler-tools/libvirt_test_environment/rabbit_obs_client.py
-
+ExecStart=+/usr/share/rabbit_obs_client/rabbit_obs_client
 
 [Install]
 WantedBy=multi-user.target
