@@ -17,16 +17,17 @@
 
 
 Name:           rabbit_obs_client
-Version:        1.0
+Version:        1.0+git20200326.f66752b
 Release:        0
-Summary:        Download, install and test packages on OpenSUSE Build Service build_success events
+Summary:        Install and test packages on OpenSUSE Build Service build events
 License:        GPL-3.0
 Group:          System/Monitoring
 Url:            https://github.com/rabbit_obs_client/rabbit_obs_client
 Source:         %{name}-%{version}.tar.xz
 BuildRequires:  pkgconfig(systemd)
-BuildRequires:  python-rpm-macros
-%python_subpackages
+Requires:       python3-pika
+BuildArch:      noarch
+%{?systemd_requires}
 
 %description
 Use this package for automated tests, which are triggered once the OBS server
@@ -47,7 +48,9 @@ with the package and a specified command which may start tests is executed and l
 install -D -m 0755 rabbit_obs_client.py  %{buildroot}/usr/share/%{name}/rabbit_obs_client
 install -D -m 0644 rabbit_obs_client.service %{buildroot}%{_unitdir}/rabbit_obs_client.service
 install -D -m 0644 rabbit_obs.conf %{buildroot}/%{_sysconfdir}/rabbit_obs.conf
-ln -sf %{_sbindir}/service %{buildroot}%{_sbindir}/rcrabbit_obs_client
+mkdir -p %{buildroot}%{_sbindir}
+mkdir -p %{buildroot}%{_localstatedir}/log/rabbit_obs
+ln -sf service %{buildroot}%{_sbindir}/rcrabbit_obs_client
 
 
 %pre
@@ -63,9 +66,12 @@ ln -sf %{_sbindir}/service %{buildroot}%{_sbindir}/rcrabbit_obs_client
 %service_del_postun %{name}.service
 
 %files
+%dir /usr/share/rabbit_obs_client
+/usr/share/%{name}/rabbit_obs_client
 %config %{_sysconfdir}/rabbit_obs.conf
 %{_unitdir}/rabbit_obs_client.service
 %{_sbindir}/rcrabbit_obs_client
-%ghost /var/run/rabbit_obs_client
+%ghost /run/rabbit_obs_client
+%dir %{_localstatedir}/log/rabbit_obs
 
 %changelog
