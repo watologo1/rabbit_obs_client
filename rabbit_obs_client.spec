@@ -1,7 +1,7 @@
 #
 # spec file for package rabbit_obs_client
 #
-# Copyright (c) 2019 SUSE LINUX GmbH, Nuernberg, Germany.
+# Copyright (c) 2020 SUSE LLC
 #
 # All modifications and additions to the file contributed by third parties
 # remain the property of their copyright owners, unless otherwise agreed
@@ -20,10 +20,11 @@ Name:           rabbit_obs_client
 Version:        1.0+git20200326.f66752b
 Release:        0
 Summary:        Install and test packages on OpenSUSE Build Service build events
-License:        GPL-3.0
+License:        GPL-3.0-only
 Group:          System/Monitoring
-Url:            https://github.com/rabbit_obs_client/rabbit_obs_client
+URL:            https://github.com/rabbit_obs_client/rabbit_obs_client
 Source:         %{name}-%{version}.tar.xz
+BuildRequires:  pkgconfig
 BuildRequires:  pkgconfig(systemd)
 Requires:       python3-pika
 BuildArch:      noarch
@@ -45,11 +46,12 @@ with the package and a specified command which may start tests is executed and l
 
 
 %install
-install -D -m 0755 rabbit_obs_client.py  %{buildroot}/usr/share/%{name}/rabbit_obs_client
+install -D -m 0755 rabbit_obs_client.py  %{buildroot}%{_datadir}/%{name}/rabbit_obs_client
 install -D -m 0644 rabbit_obs_client.service %{buildroot}%{_unitdir}/rabbit_obs_client.service
 install -D -m 0644 rabbit_obs.conf %{buildroot}/%{_sysconfdir}/rabbit_obs.conf
 mkdir -p %{buildroot}%{_sbindir}
 mkdir -p %{buildroot}%{_localstatedir}/log/rabbit_obs
+mkdir -p %{buildroot}/run/rabbit_obs_client
 ln -sf service %{buildroot}%{_sbindir}/rcrabbit_obs_client
 
 
@@ -66,12 +68,12 @@ ln -sf service %{buildroot}%{_sbindir}/rcrabbit_obs_client
 %service_del_postun %{name}.service
 
 %files
-%dir /usr/share/rabbit_obs_client
-/usr/share/%{name}/rabbit_obs_client
+%dir %{_datadir}/rabbit_obs_client
+%{_datadir}/%{name}/rabbit_obs_client
 %config %{_sysconfdir}/rabbit_obs.conf
 %{_unitdir}/rabbit_obs_client.service
 %{_sbindir}/rcrabbit_obs_client
-%ghost /run/rabbit_obs_client
+%dir /run/rabbit_obs_client
 %dir %{_localstatedir}/log/rabbit_obs
 
 %changelog

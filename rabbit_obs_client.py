@@ -15,7 +15,7 @@ import pika
 # https://rabbit.opensuse.org
 
 LOG_DIR = "/var/log/rabbit_obs/"
-DOWNLOAD_DIR = "/run/rabbit_obs"
+DOWNLOAD_DIR = "/run/rabbit_obs_client"
 INST_DIR = "/usr/share/rabbit_obs_client"
 DFLT_TRIGGER = "/bin/true"
 
