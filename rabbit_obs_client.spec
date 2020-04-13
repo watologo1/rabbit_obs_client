@@ -51,7 +51,6 @@ install -D -m 0644 rabbit_obs_client.service %{buildroot}%{_unitdir}/rabbit_obs_
 install -D -m 0644 rabbit_obs.conf %{buildroot}/%{_sysconfdir}/rabbit_obs.conf
 mkdir -p %{buildroot}%{_sbindir}
 mkdir -p %{buildroot}%{_localstatedir}/log/rabbit_obs
-mkdir -p %{buildroot}/run/rabbit_obs_client
 ln -sf service %{buildroot}%{_sbindir}/rcrabbit_obs_client
 
 
@@ -73,7 +72,7 @@ ln -sf service %{buildroot}%{_sbindir}/rcrabbit_obs_client
 %config %{_sysconfdir}/rabbit_obs.conf
 %{_unitdir}/rabbit_obs_client.service
 %{_sbindir}/rcrabbit_obs_client
-%dir /run/rabbit_obs_client
+%ghost /run/rabbit_obs_client
 %dir %{_localstatedir}/log/rabbit_obs
 
 %changelog

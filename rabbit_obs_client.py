@@ -5,7 +5,7 @@ import json
 import logging
 import os
 import pwd
-from subprocess import Popen, STDOUT, run, TimeoutExpired
+from subprocess import Popen, run, TimeoutExpired
 import sys
 from datetime import datetime
 
@@ -82,14 +82,15 @@ class OBSConnect(object):
             package=pkg_hit["package"],
             repo=pkg_hit["repo"],
             buildarch=pkg_hit["buildarch"])
+
         try:
             logging.info("Making dir: [%s]" % t_dir)
             if not os.path.isdir(t_dir):
-                logging.warning("Calling script: %s", osc_cmd)
                 os.makedirs(t_dir)
             if not os.path.isdir(t_dir):
                 logging.error("Failed to make dir: %s", t_dir)
                 return
+            logging.info("Calling script: %s", osc_cmd)
             os.chown(t_dir, self.uids[pkg_hit["user"]], self.gids[pkg_hit["user"]])
             run(osc_cmd.split(), timeout=20, check=True)
         #    except subprocess.CalledProcessError as E:
@@ -119,13 +120,30 @@ class OBSConnect(object):
         log_file = LOG_DIR + pkg['project'] + \
                     '_' + pkg['package'] + '_' + pkg['repo'] + '_' + \
                     str(datetime.utcnow().strftime('%d_%m_%Y_%H_%M_%S')) + '.log'
-        with open(log_file, "wb") as out:
-            exec_cmd = [pkg['trigger_cmd'], pkg['project'], pkg['package'], pkg['repo']]
-            logging.info("Calling script: %s", " ".join(exec_cmd))
-            logging.info("Logging script to : %s", log_file)
-            child = Popen(exec_cmd, shell=True,
-                          stdout=out, stderr=out, bufsize=-1)
+        try:
+            with open(log_file, "wb") as out:
+                exec_cmd = [pkg['trigger_cmd'], pkg['project'], pkg['package'], pkg['repo']]
+                logging.info("Calling script: %s", " ".join(exec_cmd))
+                logging.info("Logging script to : %s", log_file)
+                Popen(exec_cmd, shell=True,
+                      stdout=out, stderr=out, bufsize=-1)
+        except Exception as E:
+            logging.error("Error when executing script [%s]: %s" % (exec_cmd, E))
+            return False
         return True
+
+    def process_package_match(self, pkg_hit):
+
+        t_dir = self.get_rpm(pkg_hit)
+        if not t_dir:
+            logging.error("Could not download rpm(s)")
+            return
+
+        if self.update_pkg(t_dir) is None:
+            return
+
+        if self.trigger_cmd(pkg_hit) is False:
+            return
 
     def rabbit_cb(self, ch, method, properties, body):
 
@@ -161,46 +179,37 @@ class OBSConnect(object):
                 pkg_hit = d
                 break
 
-        if pkg_hit == None:
+        if not pkg_hit:
             return
 
         logging.info(" [x] %r:%r" % (method.routing_key, body))
-        t_dir = self.get_rpm(pkg_hit)
-        if not t_dir:
-            logging.error("Could not download rpm(s)")
-            return
-
-        if self.update_pkg(t_dir) is None:
-            return
-
-        if self.trigger_cmd(pkg_hit) is False:
-            return
+        self.process_package_hit(pkg_hit)
 
     def connect(self):
         # connection = pika.BlockingConnection(pika.URLParameters("amqps://suse:suse@rabbit.suse.de"))
-        while True:
         # See https://pypi.org/project/pika/
         # Threading multiple connections (obs and ibs) is hard
         # Currently only one connecion is supported
+        while True:
             try:
                 connection = pika.BlockingConnection(pika.URLParameters(
                     "amqps://opensuse:opensuse@rabbit.opensuse.org"))
                 channel = connection.channel()
 
                 channel.exchange_declare(exchange='pubsub', exchange_type='topic',
-                                     passive=True, durable=True)
+                                         passive=True, durable=True)
 
                 result = channel.queue_declare("", exclusive=True)
                 queue_name = result.method.queue
 
                 channel.queue_bind(exchange='pubsub', queue=queue_name,
-                               routing_key=self.listen_key)
+                                   routing_key=self.listen_key)
 
                 print(' [*] Waiting for logs. To exit press CTRL+C')
 
                 channel.basic_consume(queue_name,
-                                  self.rabbit_cb,
-                                  auto_ack=True)
+                                      self.rabbit_cb,
+                                      auto_ack=True)
 
                 channel.start_consuming()
             except pika.exceptions.ConnectionClosedByBroker:
@@ -211,6 +220,7 @@ class OBSConnect(object):
             # Recover on all other connection errors
             except pika.exceptions.AMQPConnectionError:
                 continue
+
 
 def main():
 
@@ -227,16 +237,22 @@ def main():
     parser.add_argument("--server", help="OpenSUSE Build Server", choices=["obs", "ibs"], default="obs", required=False)
     args = parser.parse_args()
 
+    try:
+        if not os.path.isdir(DOWNLOAD_DIR):
+            os.makedirs(DOWNLOAD_DIR)
+    except Exception:
+        logging.error("Could not create download directory: %s" % DOWNLOAD_DIR)
+        exit(1)
+
     # Start server
     server = OBSConnect(args.server)
-#    server.connect()
-#    pkg = {'project': 'home:trenn:cobbler_mainline_sle15_sp1', 'package': 'cobbler',
-#           'repo': 'SUSE_SLE-15-SP1_GA_standard', 'user': 'trenn', 'buildarch': 'x86_64', 'pkg_arch': 'noarch',
-#           'trigger_cmd': 'sleep 10'}
-    t_dir = server.get_rpm(server.pkg_list[0])
-#    if t_dir:
-#    server.update_pkg(t_dir)
-#    server.trigger_cmd(pkg)
+    server.connect()
+    # Testing without connect to rabbitmq event server
+    # pkg = {'project': 'home:trenn:cobbler_test_build', 'package': 'cobbler',
+    #       'repo': 'SLE_15_SP1', 'user': 'trenn', 'buildarch': 'x86_64', 'pkg_arch': 'noarch',
+    #       'trigger_cmd': 'echo hallo'}
+    # server.process_package_match(pkg)
+
 
 if __name__ == '__main__':
     main()
