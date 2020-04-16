@@ -119,7 +119,7 @@ class OBSConnect(object):
 
         log_file = LOG_DIR + pkg['project'] + \
                     '_' + pkg['package'] + '_' + pkg['repo'] + '_' + \
-                    str(datetime.utcnow().strftime('%d_%m_%Y_%H_%M_%S')) + '.log'
+                    str(datetime.utcnow().strftime('%Y-%d-%m_%H-%M-%S')) + '.log'
         try:
             with open(log_file, "wb") as out:
                 exec_cmd = [pkg['trigger_cmd'], pkg['project'], pkg['package'], pkg['repo']]
@@ -183,7 +183,7 @@ class OBSConnect(object):
             return
 
         logging.info(" [x] %r:%r" % (method.routing_key, body))
-        self.process_package_hit(pkg_hit)
+        self.process_package_match(pkg_hit)
 
     def connect(self):
         # connection = pika.BlockingConnection(pika.URLParameters("amqps://suse:suse@rabbit.suse.de"))
